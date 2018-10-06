@@ -42,6 +42,8 @@
    - up or "V": increment the value (and wake up one waiting
      thread, if any). */
 
+static bool get_priority_list (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+
 void
 sema_init (struct semaphore *sema, unsigned value) 
 {
@@ -69,8 +71,8 @@ sema_down (struct semaphore *sema)
   old_level = intr_disable ();
   while (sema->value == 0) 
     {
-      //list_insert_ordered (&sema->waiters, &thread_current ()->elem, get_priority_list(), NULL);
-      list_push_back(&sema->waiters, &thread_current ()->elem);
+      list_insert_ordered (&sema->waiters, &thread_current ()->elem, get_priority_list, NULL);
+      //list_push_back(&sema->waiters, &thread_current ()->elem);
       //list_sort(&sema->waiters, get_priority_list, NULL);
       thread_block ();
     }
@@ -119,7 +121,7 @@ sema_up (struct semaphore *sema)
   old_level = intr_disable ();
   if (!list_empty (&sema->waiters)) 
     {
-      //list_sort (&sema->waiters, get_priority_list, NULL);
+      list_sort (&sema->waiters, get_priority_list, NULL);
       thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
       //if (cur->priority > thread_current ()->priority)
@@ -208,8 +210,14 @@ lock_acquire (struct lock *lock)
   ASSERT (!lock_held_by_current_thread (lock));
   //char buffer[100];
 
+  thread_current ()-> waiting_lock = &lock;
+
   if (lock-> holder != NULL && lock-> holder-> priority < thread_current ()-> priority)
+  {
     lock-> holder -> priority = thread_current ()-> priority;
+    lock-> priority = lock-> holder -> priority;
+    //list_inserted_add(lock-> )
+  }
 
   //thread_yield();
   sema_down (&lock->semaphore);
@@ -360,3 +368,10 @@ cond_broadcast (struct condition *cond, struct lock *lock)
   while (!list_empty (&cond->waiters))
     cond_signal (cond, lock);
 }
+
+bool
+get_priority_list (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
+{
+  return list_entry(a, struct thread, elem)-> priority > list_entry(b, struct thread, elem)-> priority;
+}
+

@@ -105,7 +105,10 @@ struct thread
 
     //original priority
     int ori_priority;
-    int lock_on_me
+    int lock_on_me;
+
+    //the lock the thread is waiting for
+    struct lock *waiting_lock; 
   };
 
 /* If false (default), use round-robin scheduler.

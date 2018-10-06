@@ -70,6 +70,7 @@ static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
+static bool get_priority_list (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -481,6 +482,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->ori_priority = priority;
   t->magic = THREAD_MAGIC;
+  t->waiting_lock = NULL;
 
   old_level = intr_disable();
   //list_push_back (&all_list, &t->allelem);
